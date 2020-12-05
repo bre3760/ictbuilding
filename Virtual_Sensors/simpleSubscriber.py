@@ -7,7 +7,7 @@ class MySubscriber:
 		def __init__(self, clientID):
 			self.clientID = clientID
 			# create an instance of paho.mqtt.client
-			self._paho_mqtt = PahoMQTT.Client(clientID, False) 
+			self._paho_mqtt = PahoMQTT.Client(clientID, False)
 
 			# register the callback
 			self._paho_mqtt.on_connect = self.myOnConnect
@@ -36,15 +36,17 @@ class MySubscriber:
 
 		def myOnMessageReceived (self, paho_mqtt , userdata, msg):
 			# A new message is received
-			print ("Topic:'" + msg.topic+"', QoS: '"+str(msg.qos)+"' Message: '"+str(msg.payload) + "'")
+			#print ("Topic:'" + msg.topic+"', QoS: '"+str(msg.qos)+"' Message: '"+str(msg.payload) + "'")
 			try:
+				#print("hello")
 				data=json.loads(msg.payload)
+				#a=1/0
 				json_body = [
 					{
 					"measurement": data['measurement'],
-					"tags": 
+					"tags":
 						{
-						"node": data['node'],
+						#"node": data['node'],
 						"location": data['location']
 						},
 					"time": data['time_stamp'],
@@ -54,12 +56,14 @@ class MySubscriber:
 						}
 					}
 				]
-				self.client.write_points(json_body,time_precision='s')
+
+				self.client.write_points(json_body,time_precision='s',database ='VirtualBuilding')
+				#print(type(json_body))
 			except Exception as e:
-				print (e)
+				print(e)
 
 if __name__ == "__main__":
 	test = MySubscriber('VirtualBuilding')
 	test.start()
-	while (True):
+	while(True):
 		pass

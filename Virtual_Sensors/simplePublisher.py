@@ -2,7 +2,7 @@ import paho.mqtt.client as PahoMQTT
 import time
 import pandas as pd
 import json
-
+from datetime import datetime
 class MyPublisher:
 	def __init__(self, clientID):
 		self.clientID = clientID
@@ -30,63 +30,73 @@ class MyPublisher:
 
 
 meas = {
-	'BLOCK1:BEDROOM:Zone Operative Temperature [C](Hourly:ON)':'Zone_bedroom:Temp_Op', #AP
-	'BLOCK1:BATHROOM:Zone Operative Temperature [C](Hourly:ON)':'Zone_bathroom:Temp_Op',
-	'BLOCK1:KITCHEN:Zone Operative Temperature [C](Hourly:ON)':'Zone_kitchen:Temp_Op', #AT
+	'BLOCK1:BEDROOM:Zone Operative Temperature [C](TimeStep:ON)':'Zone_bedroom:Temp_Op', #AP
+	'BLOCK1:BATHROOM:Zone Operative Temperature [C](TimeStep:ON)':'Zone_bathroom:Temp_Op',
+	'BLOCK1:KITCHEN:Zone Operative Temperature [C](TimeStep:ON)':'Zone_kitchen:Temp_Op', #AT
 
-	'BLOCK1:BEDROOM:Zone Ventilation Air Change Rate [ach](Hourly)':'Zone_bedroom:Ventilation',
+	'BLOCK1:BEDROOM:Zone Ventilation Air Change Rate [ach](TimeStep)':'Zone_bedroom:Ventilation',
 
     #Zone Mean Air Temperature
-    'BLOCK1:BEDROOM:Zone Mean Air Temperature [C](Hourly:ON)':'Zone_bedroom:Temp_mean', #AP
-	'BLOCK1:BATHROOM:Zone Mean Air Temperature [C](Hourly:ON)':'Zone_bathroom:Temp_mean',
-	'BLOCK1:KITCHEN:Zone Mean Air Temperature [C](Hourly:ON)':'Zone_kitchen:Temp_mean', #AT # AS
+    'BLOCK1:BEDROOM:Zone Mean Air Temperature [C](TimeStep:ON)':'Zone_bedroom:Temp_mean', #AP
+	'BLOCK1:BATHROOM:Zone Mean Air Temperature [C](TimeStep:ON)':'Zone_bathroom:Temp_mean',
+	'BLOCK1:KITCHEN:Zone Mean Air Temperature [C](TimeStep:ON)':'Zone_kitchen:Temp_mean', #AT # AS
 
 
-    'Environment:Site Outdoor Air Drybulb Temperature [C](Hourly)':'Outdoor:Temp',
-    'Environment:Site Outdoor Air Barometric Pressure [Pa](Hourly)':'Outdoor:Pressure',
-    'Environment:Site Wind Speed [m/s](Hourly)':'Wind',
-	'Environment:Site Wind Direction [deg](Hourly)':'Wind_direction',
+    'Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)':'Outdoor:Temp',
+    'Environment:Site Outdoor Air Barometric Pressure [Pa](TimeStep)':'Outdoor:Pressure',
+    'Environment:Site Wind Speed [m/s](TimeStep)':'Wind',
+	'Environment:Site Wind Direction [deg](TimeStep)':'Wind_direction',
 
 
-    'BLOCK1:BEDROOM:Zone Windows Total Transmitted Solar Radiation Rate [W](Hourly)':'Zone_bedroom:SolarRadiationRate',  #AI
-	'BLOCK1:BATHROOM:Zone Windows Total Transmitted Solar Radiation Rate [W](Hourly)':'Zone_bathroom:SolarRadiationRate',
-	'BLOCK1:KITCHEN:Zone Windows Total Transmitted Solar Radiation Rate [W](Hourly)':'Zone_kitchen:SolarRadiationRate',
+    'BLOCK1:BEDROOM:Zone Windows Total Transmitted Solar Radiation Rate [W](TimeStep)':'Zone_bedroom:SolarRadiationRate',  #AI
+	'BLOCK1:BATHROOM:Zone Windows Total Transmitted Solar Radiation Rate [W](TimeStep)':'Zone_bathroom:SeolarRadiationRate',
+	'BLOCK1:KITCHEN:Zone Windows Total Transmitted Solar Radiation Rate [W](TimeStep)':'Zone_kitchen:SolarRadiationRate',
 
-    'BLOCK1:BEDROOM:Zone Air Relative Humidity [%](Hourly:ON) ':'Zone_bedroom:Humidity',
-	'BLOCK1:BATHROOM:Zone Air Relative Humidity [%](Hourly:ON)':'Zone_bathroom:Humidity',
-	'BLOCK1:KITCHEN:Zone Air Relative Humidity [%](Hourly:ON)':'Zone_kitchen:Humidity',
+    'BLOCK1:BEDROOM:Zone Air Relative Humidity [%](TimeStep:ON)':'Zone_bedroom:Humidity',
+	'BLOCK1:BATHROOM:Zone Air Relative Humidity [%](TimeStep:ON)':'Zone_bathroom:Humidity',
+	'BLOCK1:KITCHEN:Zone Air Relative Humidity [%](TimeStep:ON)':'Zone_kitchen:Humidity',
 
-    'DistrictCooling:Facility [J](Hourly)':'Cool',
+    'DistrictCooling:Facility [J](TimeStep)':'Cool',
 
     'Electricity:Facility [J](TimeStep)':'Power'
 }
 
 
 
+pub = MyPublisher("MyPublisher")
+pub.start()
+df=pd.read_csv('eplusout.csv',sep=',',decimal=',',index_col=0)
 
-if __name__ == "__main__":
-	test = MyPublisher("MyPublisher")
-	test.start()
-	df=pd.read_csv('data.csv',sep=',',decimal=',',index_col=0)
-	df.index=pd.to_datetime(df.index,unit='s')
-	GATEWAY_NAME="VirtualBuilding"
-	for i in df.index:
-		for j in df.loc[i].items():
-			nodeID=j[0]
-			value=j[1]
-			if nodeID=='Power':
-				measurement="Power"
-			else:
-				measurement="Temperature"
-			payload={
-						"location":str(GATEWAY_NAME),
-						"measurement":measurement,
-						"node":str(nodeID),
-						"time_stamp":str(i),
-						"value":value}
-			test.myPublish ('ict4bd', json.dumps(payload))
-			time.sleep(0.1)
+GATEWAY_NAME="VirtualBuilding"
 
-	test.stop()
+for i in range(len(df.index)):
+    tt = df.index[i]
+    days, hours = tt.split('  ')
+    tt = f'{days}/2017{hours}'
+    tt = tt.replace(' ', '')
+    if '201724:' in tt:
+        tt=tt.replace('24:', '00:')
+        timestamp = time.mktime(datetime.strptime(tt, "%m/%d/%Y%H:%M:%S").timetuple())
+        timestamp += 86400
+    else:
+        timestamp = time.mktime(datetime.strptime(tt, "%m/%d/%Y%H:%M:%S").timetuple())
 
+    for key, val in meas.items():
+        if 'District' in key or 'Electricity' in key:
+            new_val = float(df[key][i])/3.6e6
+        elif 'Pressure' in key:
+            new_val = float(df[key][i])/1000
+        else:
+            new_val = float(df[key][i])
+        payload={
+            "location":str(GATEWAY_NAME),
+            "measurement":val,
+            #"time_stamp":datetime.utcnow().isoformat(),
+            "time_stamp":int(timestamp),
+            "value":new_val
+        }
+        print(payload)
+        pub.myPublish ('ict4bd', json.dumps(payload))
+        time.sleep(.1)
 
+pub.stop()
