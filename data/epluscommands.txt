@@ -1,0 +1,8 @@
+energyplus -w "/home/brendan/Desktop/polito/ICTBuilding/ictbuilding/data/WeatherData_1/.epw" -d /home/brendan/Desktop/polito/ICTBuilding/ictbuilding/data/WeatherData_1/eplusout_1 -r "/home/brendan/Desktop/polito/ICTBuilding/ictbuilding/IDF_Models/optimum_model_timestamp.idf" 
+
+
+energyplus -w "/home/brendan/Desktop/polito/ICTBuilding/ictbuilding/data/WeatherData_2/.epw" -d /home/brendan/Desktop/polito/ICTBuilding/ictbuilding/data/WeatherData_2/eplusout_2 -r "/home/brendan/Desktop/polito/ICTBuilding/ictbuilding/IDF_Models/optimum_model_timestamp.idf" 
+
+
+energyplus -w "/home/brendan/Desktop/polito/ICTBuilding/ictbuilding/data/WeatherData_3/.epw" -d /home/brendan/Desktop/polito/ICTBuilding/ictbuilding/data/WeatherData_3/eplusout_3 -r "/home/brendan/Desktop/polito/ICTBuilding/ictbuilding/IDF_Models/optimum_model_timestamp.idf" 
+
