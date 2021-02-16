@@ -64,19 +64,23 @@ meas = {
 
 pub = MyPublisher("MyPublisher")
 pub.start()
-df=pd.read_csv('eplusout.csv',sep=',',decimal=',',index_col=0)
+df=pd.read_csv('eplusout_3.csv',sep=',',decimal=',',index_col=0)
 
 GATEWAY_NAME="VirtualBuilding"
 x=input("START?")
 count=0
 dataPerMonth = 24*31*6
+print(len(df.index))
 for i in range(len(df.index)):
-    if i > dataPerMonth:
+
+    if i-24*31*6*3> dataPerMonth:
+
         break
+
     tt = df.index[i]
     x, hours = tt.split('  ')
     month,days = x.split('/')
-    month='01'
+    month='02'
     tt = f'{month}/{days}/2021{hours}'
     tt = tt.replace(' ', '')
     if '202124:' in tt:
